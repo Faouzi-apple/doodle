@@ -1,47 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
-</html>
+
 <script>
 
-    function getplayerId(requiredId){
-        let url ="getplayerById.php?id=" + requiredId;
-        fetch(url, {method: 'GET'})
-        .then((response) =>{
-            if (!response.ok){
-                throw new Error("Something went wrong!");
-            }
-            let parsedResponse = response.json();
-            return parsedResponse
-        })
-        .then((data) => {
-            console.log(data);
-            return data;
-        })
-        .catch((error)=>{
-        });
-    }
+let requiredPlayerName = "tfjfhj"
 
-    getPlayerName(requiredPlayerName);
-  function createNewPlayerName(playerName) {
-    let url = “createNewPlayerName.php”;
+function getplayerId(requiredId){
+    let url ="getplayerById.php?id=" + requiredId;
+    fetch(url, {method: 'GET'})
+    .then((response) =>{
+        if (!response.ok){
+            throw new Error("Something went wrong!");
+        }
+        return response.json();  // Parse directly here
+    })
+    .then((data) => {
+        console.log(data);
+        return data;
+    })
+    .catch((error)=>{
+        console.error(error);
+    });
+}
+
+getplayerId(33);  // Corrected function call
+
+function createNewPlayerName(playerName) {
+    let url = "createNewPlayerName.php";  // Corrected quotes
     let formData = new FormData();
-    formData.append(“name”, playerName);
-    fetch(url, { method: ‘POST’, body: formData })
-      .then((response) => {
-        // Show Response Text
-        console.log(response.text);
-        return response.text
+    formData.append("name", playerName);
+    fetch(url, { method: 'POST', body: formData })
+      .then((response) => response.text())  // Corrected response.text() for getting the text
+      .then((data) => {
+        console.log(data);
+        return data;
       })
-  }
-  const unTexte = “Nom du nouvel utilisateur”;
-  createNewPlayer(unTexte);
+      .catch((error)=>{
+          console.error(error);
+      });
+}
+
+const unTexte = "Nom du nouvel utilisateur";  // Corrected quotes
+createNewPlayerName(unTexte);  // Corrected function call
+
 </script>

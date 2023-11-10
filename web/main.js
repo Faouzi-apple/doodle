@@ -1,168 +1,255 @@
+// load window before code
 window.onload = function () {
-    var canvas = document.getElementById("myCanvas");
-    var ctx = canvas.getContext("2d");
-
+    // get canvas
+    let canvas = document.getElementById("myCanvas");
+    let ctx = canvas.getContext("2d");
+    // for accept keybord
     canvas.setAttribute("tabindex", 0);
     canvas.focus();
-
+    // size canvas
     canvas.width = 360;
     canvas.height = 640;
+    // thing red cube
+    let Xcar = 100;
+    let Ycar = 600;
+    let sizecar = 25;
+    let colorcar = "red";
+    let grav = 1; // gravity
+    let jumpPower = 15; // power jump
+    let velo = 0; // velocity, vertical speed red cube
+    // platforms table
+    let platforms = [];
+    let blackBlock = null; // black cube
+    let lineWidth = 2; // width hitbox
+    let colorbord = "green"; // color bordure platforms
+    // displacement variable
+    let moveSpeed = 5;
+    let gauche = false;
+    let droite = false;
+    let jumping = false;
+    // letiables de score et de jeu
+    let bgColor = "lightblue"; // background-color
+    let score = 0; // score
+    let gameStarted = false; // if gamme started
+    // speed black cube
 
-    var Xcar = 100;
-    var Ycar = 600;
-    var sizecar = 25;
-    var colorcar = "red";
-    var grav = 1;
-    var soPower = 15;
-    var velo = 0;
-    var tombe = true;
-    var so = false;
+    let blackBlockSpeed = 2;
+    let blackBlockDirection;
 
-    var platforms = [];
-    var lineWidth = 2;
-    var colorbord = "green";
+    let globalData;
+    let names;
+    let namesRayan;
 
-    var moveSpeed = 5;
-    var platformSpeed = 2; // Nouvelle variable pour la vitesse des plateformes
-    var gauche = false;
-    var droite = false;
+    function getPlayers() {
+        return new Promise((resolve, reject) => {
+            fetch('/doodle/php/getplayer.php')
+            .then((response) => {
+              console.log(response);  // Move this line here to log the response
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.json();
+            })
+            .then((data) => {
+              globalData = data;
+              console.log(globalData);
+              names = data[0].name;
+              namesRayan = data[2].name;
+              blackBlockDirection = data[3].blockdirection;
+              console.log(blackBlockDirection);
+              console.log(namesRayan)
+              console.log(names);
+              resolve(data);
+            })
+            .catch((error) => {
+              console.log('There has been a problem:', error);
+              reject(error);
+            });
+        });
+      }
+      
+      getPlayers();
+      
 
-    var nmbrTP = 0;
-    var bgColor = "lightblue"; // Couleur de fond par défaut
-    var score = 0;
-
-    // Créez une grande plateforme tout en bas
+    // create first plate
     platforms.push({ x: 0, y: canvas.height - 10, width: canvas.width, height: 10 });
-
-    function drawSquare() {
+    // draw red square
+    function drawCar() {
         ctx.fillStyle = colorcar;
         ctx.fillRect(Xcar, Ycar, sizecar, sizecar);
         ctx.strokeStyle = colorbord;
         ctx.lineWidth = lineWidth;
         ctx.strokeRect(Xcar, Ycar, sizecar, sizecar);
     }
-
-    function drawPlatform() {
+    // draw plate
+    function drawPlateform() {
         ctx.fillStyle = "green";
-        for (var i = 0; i < platforms.length; i++) {
-            var platform = platforms[i];
+        for (let i = 0; i < platforms.length; i++) {
+            let platform = platforms[i];
             ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
             ctx.strokeStyle = "white";
             ctx.lineWidth = lineWidth;
             ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
         }
     }
-
+    // draw black cube
+    function drawBlackCar() {
+        if (blackBlock) {
+            ctx.fillStyle = "black";
+            ctx.fillRect(blackBlock.x, blackBlock.y, sizecar, sizecar);
+        }
+    }
+    // dwan backgrond with he's spécifically color
     function drawBackground(color) {
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-
+    // Gère les collisions avec les plates-formes et le cube noir
+    // je comprend plus le code (ulcère/20)
     function handleCollisions() {
-        var squareLeft = Xcar;
-        var squareRight = Xcar + sizecar;
-        var squareTop = Ycar;
-        var squareBottom = Ycar + sizecar;
-
-        for (var i = 0; i < platforms.length; i++) {
-            var platform = platforms[i];
-
+        let leftcar = Xcar;
+        let rightcar = Xcar + sizecar;
+        let topcar = Ycar;
+        let botcar = Ycar + sizecar;
+        for (let i = 0; i < platforms.length; i++) {
+            let platform = platforms[i];
             if (
-                squareRight > platform.x &&
-                squareLeft < platform.x + platform.width &&
-                squareBottom > platform.y &&
-                squareTop < platform.y + platform.height
+                rightcar > platform.x &&
+                leftcar < platform.x + platform.width &&
+                botcar > platform.y &&
+                topcar < platform.y + platform.height
             ) {
+                // Ajuste la position du cube rouge en cas de collision avec une plate-forme
                 Ycar = platform.y - sizecar;
                 velo = 0;
-                so = false;
+                jumping = false;
             }
         }
     }
-
-    function generatePlatform() {
-        var lastPlatform = platforms[platforms.length - 1];
-        var newY = lastPlatform.y - 60;
-        var width = Math.floor(Math.random() * 50) + 50;
-        var x = Math.floor(Math.random() * (canvas.width - width));
+    // create a new platform up of canva
+    function createPlateform() {
+        let lastPlatform = platforms[platforms.length - 1];
+        let newY = lastPlatform.y - 60;
+        let width = Math.floor(Math.random() * 50) + 50;
+        let x = Math.floor(Math.random() * (canvas.width - width));
         platforms.push({ x: x, y: newY, width: width, height: 10 });
     }
-
-    function teleportAndIncrementScore() {
-        Ycar = canvas.height - sizecar;
-        velo = 0;
-        so = false;
-        nmbrTP++;
-        score++;
-
-        console.log("Nombre de téléportations : " + nmbrTP);
-        console.log("Score : " + score);
-
-        // Changer la couleur de fond aléatoirement
-        bgColor = getRandomColor();
-
-        // Déplacez les plateformes de manière aléatoire à chaque augmentation de score
-        for (var i = 0; i < platforms.length; i++) {
-            platforms[i].x = Math.floor(Math.random() * (canvas.width - platforms[i].width));
+    // create the black cube after socore supp than 1
+    function createBlackCar() {
+        if (score >= 1 && !blackBlock) {
+            let x = Math.floor(Math.random() * canvas.width);
+            let y = Math.floor(Math.random() * canvas.height);
+            blackBlock = { x: x, y: y };
         }
     }
-
-    function getRandomColor() {
-        var letters = "0123456789ABCDEF";
-        var color = "#";
-        for (var i = 0; i < 6; i++) {
+    // tp red cube down and add 1 to score
+    function tpAndAddOne() {
+        Ycar = canvas.height - sizecar;
+        velo = 0;
+        score++;
+        console.log("Score : " + score);
+        // change color back random
+        bgColor = createRandomColor();
+        // reinisilise position plat
+        for (let i = 0; i < platforms.length; i++) {
+            platforms[i].x = Math.floor(Math.random() * (canvas.width - platforms[i].width));
+        }
+        // create black cube
+        if (Ycar < 0) {
+            createBlackCar();
+        }
+    }
+    // create a hexa color in random (trouvé sur internet)
+    function createRandomColor() {
+        let letters = "0123456789ABCDEF";
+        let color = "#";
+        for (let i = 0; i < 6; i++) {
             color += letters[Math.floor(Math.random() * 16)];
         }
         return color;
     }
-
+    // function update
     function update() {
+        // Apply gravity and update the position of the red cube
         velo += grav;
         Ycar += velo;
-
+        // tp red cube down and add 1 to score (comme a la ligne 125 mais si j'enlève 1 des deux ne marche plus (ça aussi ulcère/20))
         if (Ycar < 0) {
-            teleportAndIncrementScore();
+            tpAndAddOne();
         }
-
+        // Prevent the red cube from passing through the bottom of the canvas
         if (Ycar + sizecar >= canvas.height) {
             Ycar = canvas.height - sizecar;
             velo = 0;
-            tombe = true;
+            jumping = false;
         }
-
+        // manage collision between plate and cube
         handleCollisions();
-
+        // move red cube left
         if (gauche) {
             if (Xcar - moveSpeed >= 0) {
                 Xcar -= moveSpeed;
             }
         }
+        // move red cube right
         if (droite) {
             if (Xcar + sizecar + moveSpeed <= canvas.width) {
                 Xcar += moveSpeed;
             }
         }
-
-        generatePlatform();
-
+        // create new platforme and black cube
+        createPlateform();
+        createBlackCar();
+        // move black cube left to the right
+        if (blackBlock) {
+            blackBlock.x += blackBlockSpeed * blackBlockDirection;
+            // and right to left when he touch the bordure of canva
+            if (blackBlock.x < 0 || blackBlock.x + sizecar > canvas.width) {
+                blackBlockDirection *= -1;
+            }
+        }
+        // Draw the background, platforms, the black cube, and the red cube
         drawBackground(bgColor);
-        drawPlatform();
-        drawSquare();
+        drawPlateform();
+        drawBlackCar();
+        drawCar();
         drawScore();
+        // request new animation
         requestAnimationFrame(update);
     }
-
+    // draw the score
+    function drawScore() {
+        ctx.fillStyle = "black";
+        ctx.font = "20px Arial";
+        ctx.fillText("Score: " + score, 300, 30);
+    }
+    // draw start screen
+    function drawStartScreen() {
+        ctx.fillStyle = "black";
+        ctx.font = "30px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Press Enter to Start", canvas.width / 2, canvas.height / 2);
+    }
+    // clear screen start and start game
+    function clearStartScreen() {
+        gameStarted = true;
+        requestAnimationFrame(update);
+    }
+    window.addEventListener("keypress", function (event) {
+        if (!gameStarted && event.key === "Enter") {
+            clearStartScreen();
+        }
+    });
     window.addEventListener("keydown", function (event) {
         if (event.key === "ArrowRight") {
             droite = true;
         } else if (event.key === "ArrowLeft") {
             gauche = true;
-        } else if (event.key === "ArrowUp" && !so) {
-            so = true;
-            velo = -soPower;
+        } else if (event.key === "ArrowUp" && !jumping) {
+            jumping = true;
+            velo = -jumpPower;
         }
     });
-
     window.addEventListener("keyup", function (event) {
         if (event.key === "ArrowRight") {
             droite = false;
@@ -170,36 +257,17 @@ window.onload = function () {
             gauche = false;
         }
     });
-
-    function drawScore() {
-        ctx.fillStyle = "black";
-        ctx.font = "20px Arial";
-        ctx.fillText("Score: " + score, 20, 30);
-    }
-
-    function drawGameOver() {
-        ctx.fillStyle = "red";
-        ctx.font = "24px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2);
-    }
-
-    function drawUI() {
-        drawScore();
-        if (nmbrTP === 2) {
-            clearInterval(update);
-            drawGameOver();
-        }
-    }
-
+    // Draw the game screen continuously at regular intervals
     function draw() {
         drawBackground(bgColor);
-        drawPlatform();
-        drawSquare();
-        drawUI();
+        if (gameStarted) {
+            drawPlateform();
+            drawBlackCar();
+            drawCar();
+        } else {
+            drawStartScreen();
+        }
     }
-
+    // Call the draw function every 100 milliseconds
     setInterval(draw, 100);
-
-    update();
 };
